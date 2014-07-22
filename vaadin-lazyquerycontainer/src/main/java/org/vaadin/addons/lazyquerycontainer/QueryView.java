@@ -17,6 +17,7 @@ package org.vaadin.addons.lazyquerycontainer;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Item;
+import com.vaadin.data.Property;
 
 import java.util.Collection;
 import java.util.List;
@@ -135,6 +136,7 @@ public interface QueryView {
      * @return list of removed buffered items
      */
     List<Item> getRemovedItems();
+    
 
     /**
      * Adds filter to container.
@@ -157,4 +159,8 @@ public interface QueryView {
      * Gets filters.
      */
     Collection<Container.Filter> getFilters();
+
+    //FA: ADDED
+	List<Property> getModifiedProperties();
+    
 }

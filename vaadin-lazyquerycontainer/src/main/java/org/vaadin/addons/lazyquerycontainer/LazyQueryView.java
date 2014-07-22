@@ -131,6 +131,13 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     private final List<Item> removedItems = new ArrayList<Item>();
 
+    //FA: ADDED
+	private final List<Property> modifiedProperties = new LinkedList<Property>();
+
+	private boolean queryEnabled = false;
+
+	private static Logger logger = Logger.getLogger(LazyQueryView.class);
+
     /**
      * Constructs LazyQueryView with given QueryDefinition and QueryFactory. The
      * role of this constructor is to enable use of custom QueryDefinition
@@ -211,7 +218,8 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     @Override
     public int size() {
-        return getQuerySize() + addedItems.size();
+        int size = getQuery().size() + addedItems.size();
+		return Math.max(size, 1);
     }
 
     /**
@@ -282,7 +290,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
 
         final long queryStartTime = System.currentTimeMillis();
         // load more items
-        final List<Item> items = getQuery().loadItems(startIndex, count);
+        final List<Item> items = queryEnabled ? getQuery().loadItems(startIndex, count) : Collections.EMPTY_LIST;
         final long queryEndTime = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
@@ -453,6 +461,10 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         if (!addedItems.contains(item) && !modifiedItems.contains(item)) {
             modifiedItems.add(item);
         }
+        //FA: ADDED: track individual properties for change
+        if(! modifiedProperties.contains(property)){
+        	modifiedProperties .add(property);
+        }
     }
 
     /**
@@ -528,10 +540,17 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         // Reverse added items so that they are saved in order of addition.
         final List<Item> addedItemReversed = new ArrayList<Item>(addedItems);
         Collections.reverse(addedItemReversed);
-        getQuery().saveItems(addedItemReversed, modifiedItems, removedItems);
+        //FA: this part of the code that deletes the removed items caused problem when we added new item to an empty table. 
+        //beside that, there is no actual remove feature through out the application, 
+        //therefore replaced the removed item part with an empty list to resolve the issue above.
+        //getQuery().saveItems(addedItemReversed, modifiedItems, Collections.EMPTY_LIST);
+        getQuery().saveItems(addedItemReversed, modifiedItems, getRemovedItems());
         addedItems.clear();
         modifiedItems.clear();
         removedItems.clear();
+        
+        //FA: ADDED
+        modifiedProperties.clear();
     }
 
     /**
@@ -553,7 +572,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
                 item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setReadOnly(true);
             }
         }
-        for (final Item item : removedItems) {
+        for (final Item item : getRemovedItems()) {
             if (item.getItemProperty(PROPERTY_ID_ITEM_STATUS) != null) {
                 item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setReadOnly(false);
                 item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setValue(QueryItemStatus.None);
@@ -563,6 +582,9 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         addedItems.clear();
         modifiedItems.clear();
         removedItems.clear();
+        
+        //FA: ADDED
+        modifiedProperties.clear();
     }
 
     /**
@@ -590,6 +612,13 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
     }
 
     /**
+	 * @return the modifiedProperties
+	 */
+	public List<Property> getModifiedProperties() {
+		return modifiedProperties;
+	}
+
+	/**
      * Used to set implementation property item cache map.
      *
      * @param propertyItemCacheMap the propertyItemMapCache to set
@@ -636,4 +665,18 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
     public Collection<Container.Filter> getFilters() {
         return queryDefinition.getFilters();
     }
+
+	/**
+	 * @return the queryEnabled
+	 */
+	public boolean isQueryEnabled() {
+		return queryEnabled;
+	}
+
+	/**
+	 * @param queryEnabled the queryEnabled to set
+	 */
+	public void setQueryEnabled(boolean queryEnabled) {
+		this.queryEnabled = queryEnabled;
+	}
 }

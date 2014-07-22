@@ -647,4 +647,9 @@ public class LazyQueryContainer implements Indexed, Sortable, ItemSetChangeNotif
         return ContainerHelpers.getItemIdsUsingGetIdByIndex(startIndex, numberOfItems, this);
     }
 
+	
+	public void setMaxCacheSize(int maxCacheSize) {
+		queryView.setMaxCacheSize(maxCacheSize);
+	}
+    
 }

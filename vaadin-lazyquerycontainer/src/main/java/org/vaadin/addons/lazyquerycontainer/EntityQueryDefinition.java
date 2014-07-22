@@ -20,7 +20,7 @@ package org.vaadin.addons.lazyquerycontainer;
  *
  * @author Tommi Laukkanen
  */
-public class EntityQueryDefinition extends LazyQueryDefinition {
+public class EntityQueryDefinition<E> extends LazyQueryDefinition {
     /**
      * Serial version UID for this class.
      */
@@ -28,7 +28,7 @@ public class EntityQueryDefinition extends LazyQueryDefinition {
     /**
      * Class of the persistent entity type.
      */
-    private Class<?> entityClass;
+    private Class<E> entityClass;
     /**
      * True if entities are detached from PersistenceContext.
      */
@@ -51,7 +51,7 @@ public class EntityQueryDefinition extends LazyQueryDefinition {
      */
     public EntityQueryDefinition(final boolean applicationManagedTransactions,
                                  final boolean detachedEntities, final boolean compositeItems,
-                                 final Class<?> entityClass, final int batchSize,
+                                 final Class<E> entityClass, final int batchSize,
                                  final Object idPropertyId) {
         super(compositeItems, batchSize, idPropertyId);
         this.applicationManagedTransactions = applicationManagedTransactions;
@@ -78,7 +78,7 @@ public class EntityQueryDefinition extends LazyQueryDefinition {
      *
      * @return the entityClass
      */
-    public final Class<?> getEntityClass() {
+    public final Class<E> getEntityClass() {
         return entityClass;
     }
 
