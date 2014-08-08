@@ -81,19 +81,19 @@ public class EntityQuery<E> implements Query, Serializable {
 			final Object entity = entityClass.newInstance();
 			final BeanInfo info = Introspector.getBeanInfo(entityClass);
 			for (final PropertyDescriptor pd : info.getPropertyDescriptors()) {
-				for (final Object propertyId : queryDefinition.getPropertyIds()) {
+				for (final Object propertyId : getQueryDefinition().getPropertyIds()) {
 					if (pd.getName().equals(propertyId)) {
 						try {
 							pd.getWriteMethod()
 									.invoke(entity,
-											queryDefinition
+											getQueryDefinition()
 													.getPropertyDefaultValue(propertyId));
 						} catch (Exception e) {
 							throw new RuntimeException(
 									"Error in "
 											+ propertyId
 											+ " property population with default value "
-											+ queryDefinition.getPropertyDefaultValue(propertyId)
+											+ getQueryDefinition().getPropertyDefaultValue(propertyId)
 											+ " in " + entityClass
 											+ " entity class.", e);
 						}
@@ -112,7 +112,7 @@ public class EntityQuery<E> implements Query, Serializable {
 	}
 
 	private Class<E> getEntityClass() {
-		return queryDefinition.getEntityClass();
+		return getQueryDefinition().getEntityClass();
 	}
 
 	/**
@@ -124,7 +124,7 @@ public class EntityQuery<E> implements Query, Serializable {
 	public final int size() {
 
 		if (querySize == -1) {
-			if (queryDefinition.getBatchSize() == 0) {
+			if (getQueryDefinition().getBatchSize() == 0) {
 				LOGGER.debug(getEntityClass().getName()
 						+ " size skipped due to 0 bath size.");
 				return 0;
@@ -139,7 +139,7 @@ public class EntityQuery<E> implements Query, Serializable {
 	}
 
 	private List<Filter> getFilters() {
-		return queryDefinition.getFilters();
+		return getQueryDefinition().getFilters();
 	}
 
 	private EntityProvider<E> getEntityProvider() {
@@ -160,19 +160,19 @@ public class EntityQuery<E> implements Query, Serializable {
 		final Object[] sortPropertyIds;
 		final boolean[] sortPropertyAscendingStates;
 
-		if (queryDefinition.getSortPropertyIds().length == 0) {
-			sortPropertyIds = queryDefinition.getDefaultSortPropertyIds();
-			sortPropertyAscendingStates = queryDefinition
+		if (getQueryDefinition().getSortPropertyIds().length == 0) {
+			sortPropertyIds = getQueryDefinition().getDefaultSortPropertyIds();
+			sortPropertyAscendingStates = getQueryDefinition()
 					.getDefaultSortPropertyAscendingStates();
 		} else {
-			sortPropertyIds = queryDefinition.getSortPropertyIds();
-			sortPropertyAscendingStates = queryDefinition
+			sortPropertyIds = getQueryDefinition().getSortPropertyIds();
+			sortPropertyAscendingStates = getQueryDefinition()
 					.getSortPropertyAscendingStates();
 		}
 
 		List<?> entities = entityProvider.loadItems(getEntityClass(),
 				startIndex, count, 
-				queryDefinition.isDetachedEntities(), 
+				getQueryDefinition().isDetachedEntities(), 
 				getFilters(), sortPropertyIds,
 				sortPropertyAscendingStates);
 
@@ -200,8 +200,8 @@ public class EntityQuery<E> implements Query, Serializable {
 			final List<Item> modifiedItems, final List<Item> removedItems) {
 		entityProvider.saveItems(fromItem(addedItems), fromItem(modifiedItems),
 				fromItem(removedItems),
-				queryDefinition.isApplicationManagedTransactions(),
-				queryDefinition.isDetachedEntities());
+				getQueryDefinition().isApplicationManagedTransactions(),
+				getQueryDefinition().isDetachedEntities());
 	}
 
 	private List<E> fromItem(List<Item> items) {
@@ -222,10 +222,10 @@ public class EntityQuery<E> implements Query, Serializable {
 	 */
 	public boolean deleteAllItems() {
 		return entityProvider.deleteAllItems(
-				queryDefinition.isApplicationManagedTransactions(),
+				getQueryDefinition().isApplicationManagedTransactions(),
 				getEntityClass(), getFilters(),
-				queryDefinition.getSortPropertyIds(),
-				queryDefinition.getSortPropertyAscendingStates());
+				getQueryDefinition().getSortPropertyIds(),
+				getQueryDefinition().getSortPropertyAscendingStates());
 	}
 
 	/**
@@ -238,25 +238,25 @@ public class EntityQuery<E> implements Query, Serializable {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected final Item toItem(final Object entity) {
-		if (queryDefinition.isCompositeItems()) {
+		if (getQueryDefinition().isCompositeItems()) {
 			final NestingBeanItem<?> beanItem = new NestingBeanItem<Object>(
-					entity, queryDefinition.getMaxNestedPropertyDepth(),
-					queryDefinition.getPropertyIds());
+					entity, getQueryDefinition().getMaxNestedPropertyDepth(),
+					getQueryDefinition().getPropertyIds());
 
 			final CompositeItem compositeItem = new CompositeItem();
 			compositeItem.addItem("bean", beanItem);
 
-			for (final Object propertyId : queryDefinition.getPropertyIds()) {
+			for (final Object propertyId : getQueryDefinition().getPropertyIds()) {
 				if (compositeItem.getItemProperty(propertyId) == null) {
 					compositeItem
 							.addItemProperty(
 									propertyId,
 									new ObjectProperty(
-											queryDefinition
+											getQueryDefinition()
 													.getPropertyDefaultValue(propertyId),
-											queryDefinition
+											getQueryDefinition()
 													.getPropertyType(propertyId),
-											queryDefinition
+											getQueryDefinition()
 													.isPropertyReadOnly(propertyId)));
 				}
 			}
@@ -264,8 +264,8 @@ public class EntityQuery<E> implements Query, Serializable {
 			return compositeItem;
 		} else {
 			return new NestingBeanItem<Object>(entity,
-					queryDefinition.getMaxNestedPropertyDepth(),
-					queryDefinition.getPropertyIds());
+					getQueryDefinition().getMaxNestedPropertyDepth(),
+					getQueryDefinition().getPropertyIds());
 		}
 	}
 
@@ -277,7 +277,7 @@ public class EntityQuery<E> implements Query, Serializable {
 	 * @return Resulting bean.
 	 */
 	protected final E fromItem(final Item item) {
-		if (queryDefinition.isCompositeItems()) {
+		if (getQueryDefinition().isCompositeItems()) {
 			return (E) ((BeanItem<?>) (((CompositeItem) item).getItem("bean")))
 					.getBean();
 		} else {
@@ -286,7 +286,7 @@ public class EntityQuery<E> implements Query, Serializable {
 	}
 
 	/**
-	 * @return the queryDefinition
+	 * @return the getQueryDefinition()
 	 */
 	protected final EntityQueryDefinition getQueryDefinition() {
 		return queryDefinition;

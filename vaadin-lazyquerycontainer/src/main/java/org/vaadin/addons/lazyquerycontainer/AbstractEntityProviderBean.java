@@ -23,7 +23,9 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import org.vaadin.addons.lazyquerycontainer.entityProvider.EntityProviderHelper;
 import org.vaadin.addons.lazyquerycontainer.filters.In;
+import org.vaadin.addons.lazyquerycontainer.filters.CustomJPAFilter;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Filter;
@@ -42,6 +44,8 @@ import com.vaadin.data.util.filter.SimpleStringFilter;
  */
 public abstract class AbstractEntityProviderBean<T> implements
 		EntityProvider<T> {
+
+	public static final String functionSeperator = ":";
 
 	protected abstract EntityManager getEntityManager();
 
@@ -79,18 +83,9 @@ public abstract class AbstractEntityProviderBean<T> implements
 			final CriteriaQuery<SE> cq, final Root<T> root,
 			final List<Container.Filter> filters) {
 
-		final Object[] sortPropertyIds;
-		final boolean[] sortPropertyAscendingStates;
-
-		Container.Filter rootFilter;
-		if (filters.size() > 0) {
-			rootFilter = filters.remove(0);
-		} else {
-			rootFilter = null;
-		}
-		while (filters.size() > 0) {
-			final Container.Filter filter = filters.remove(0);
-			rootFilter = new And(rootFilter, filter);
+		Container.Filter rootFilter=null;
+		for(Container.Filter filter: filters){
+			rootFilter = rootFilter ==  null ? filter : new And(rootFilter, filter);
 		}
 
 		if (rootFilter != null) {
@@ -238,8 +233,27 @@ public abstract class AbstractEntityProviderBean<T> implements
 		if (sortPropertyIds.length > 0) {
 			final List<Order> orders = new ArrayList<Order>();
 			for (int i = 0; i < sortPropertyIds.length; i++) {
-				final Expression property = (Expression) getPropertyPath(root,
-						sortPropertyIds[i]);
+				
+				//TODO: come up with an abstract level for passing the sorting phrase to the container
+				String sortPropertyId = (String)sortPropertyIds[i]; 
+				String propertyId;
+				String function;
+				int functionSeperatorIndex = sortPropertyId.indexOf(functionSeperator);
+				if(functionSeperatorIndex==-1) {
+					function = null;
+					propertyId = sortPropertyId;
+				} else {
+					function = sortPropertyId.substring(0, functionSeperatorIndex);
+					propertyId = sortPropertyId.substring(functionSeperatorIndex+1);
+				}
+				
+				Expression property = getPropertyPath(root,
+						propertyId);
+				
+				if( function!=null){
+					property = applyFunction(cb, function, property);
+				}
+				
 				if (sortPropertyAscendingStates[i]) {
 					orders.add(cb.asc(property));
 				} else {
@@ -248,6 +262,16 @@ public abstract class AbstractEntityProviderBean<T> implements
 			}
 			cq.orderBy(orders);
 		}
+	}
+
+	private Expression applyFunction(CriteriaBuilder cb, String function, Expression property) {
+		if("lower".equals(function)){
+			property = cb.lower(property);
+		} else {
+			throw new RuntimeException("Function "+function+" is not supported by AbstractEntityProviderBean");
+		}
+		
+		return property;
 	}
 
 	/**
@@ -367,7 +391,14 @@ public abstract class AbstractEntityProviderBean<T> implements
 		}
 		
 		if(filter instanceof In){
-			//TODO: implement support for In
+			final In inFilter = (In) filter;
+			Expression property = (Expression) getPropertyPath(root, inFilter.getPropertyId());
+			return property.in(inFilter.getValues());
+		}
+		
+		if( filter instanceof CustomJPAFilter){
+			final CustomJPAFilter jpaFilter = (CustomJPAFilter) filter;
+			return jpaFilter.prepareFilter(cb, root);
 		}
 
 		throw new UnsupportedOperationException("Vaadin filter: "
@@ -385,17 +416,7 @@ public abstract class AbstractEntityProviderBean<T> implements
 	 */
 	private Path<Object> getPropertyPath(final Root<?> root,
 			final Object propertyId) {
-		final String[] propertyIdParts = ((String) propertyId).split("\\.");
-
-		Path<Object> path = null;
-		for (final String part : propertyIdParts) {
-			if (path == null) {
-				path = root.get(part);
-			} else {
-				path = path.get(part);
-			}
-		}
-		return path;
+		return EntityProviderHelper.getPropertyPath(root, propertyId);
 	}
 
 }

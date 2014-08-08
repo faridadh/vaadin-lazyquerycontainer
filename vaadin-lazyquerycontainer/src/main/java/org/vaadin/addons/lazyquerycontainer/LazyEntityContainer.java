@@ -15,6 +15,10 @@
  */
 package org.vaadin.addons.lazyquerycontainer;
 
+import javax.persistence.EntityManager;
+
+import org.vaadin.addons.lazyquerycontainer.entityProvider.SimpleEntityProvider;
+
 import com.vaadin.data.util.BeanItem;
 /**
  * LazyEntityContainer enables using JPA entities with lazy batch loading, filter, sort
@@ -40,6 +44,15 @@ public final class LazyEntityContainer<T> extends LazyQueryContainer {
      * @param detachedEntities               True if entities are detached from PersistenceContext.
      * @param compositeItems                 True f items are wrapped to CompositeItems.
      */
+    public LazyEntityContainer(final EntityManager entityManager,
+            final Class<?> entityClass, final int batchSize, final Object idPropertyId,
+            final boolean applicationManagedTransactions,
+            final boolean detachedEntities, final boolean compositeItems) {
+    	this(new SimpleEntityProvider(entityManager),
+    			entityClass, batchSize, idPropertyId, applicationManagedTransactions,
+    			detachedEntities, compositeItems);
+    }
+
     public LazyEntityContainer(final EntityProvider entityProvider,
                                final Class<?> entityClass, final int batchSize, final Object idPropertyId,
                                final boolean applicationManagedTransactions,
@@ -131,4 +144,12 @@ public final class LazyEntityContainer<T> extends LazyQueryContainer {
         }
     }
 
+
+	public void setBatchSize(int batchSize) {
+		getQueryView().getQueryDefinition().setBatchSize(batchSize);
+	}	
+	
+	public void setMaxQuerySize(int maxQuerySize) {
+		getQueryView().getQueryDefinition().setMaxQuerySize(maxQuerySize);
+	}	
 }

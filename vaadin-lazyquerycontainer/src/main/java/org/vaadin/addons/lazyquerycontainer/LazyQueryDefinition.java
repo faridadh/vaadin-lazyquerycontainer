@@ -329,7 +329,7 @@ public class LazyQueryDefinition implements QueryDefinition, Serializable {
      * @return the filters.
      */
     public final List<Container.Filter> getFilters() {
-        return filters;
+        return Collections.unmodifiableList(filters);
     }
 
     /**

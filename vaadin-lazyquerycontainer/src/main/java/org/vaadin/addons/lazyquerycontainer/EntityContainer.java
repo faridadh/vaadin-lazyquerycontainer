@@ -139,4 +139,8 @@ public final class EntityContainer<T> extends LazyQueryContainer {
             return ((BeanItem<T>) getItem(getIdByIndex(index))).getBean();
         }
     }
+    
+	public void setBatchSize(int batchSize) {
+		getQueryView().getQueryDefinition().setBatchSize(batchSize);
+	}
 }

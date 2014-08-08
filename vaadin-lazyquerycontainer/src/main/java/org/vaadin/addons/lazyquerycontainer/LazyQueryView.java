@@ -24,6 +24,8 @@ import com.vaadin.data.Property.ValueChangeNotifier;
 
 import java.util.*;
 
+import org.apache.log4j.Logger;
+
 /**
  * Lazy loading implementation of QueryView. This implementation supports lazy
  * loading, batch loading, caching and sorting. LazyQueryView supports debug
@@ -184,7 +186,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
     public void sort(final Object[] sortPropertyIds, final boolean[] ascendingStates) {
         this.sortPropertyIds = sortPropertyIds;
         this.ascendingStates = ascendingStates;
-        refresh();
+//        refresh();
     }
 
     /**
@@ -197,7 +199,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         for (final Property property : propertyItemMapCache.keySet()) {
             if (property instanceof ValueChangeNotifier) {
                 final ValueChangeNotifier notifier = (ValueChangeNotifier) property;
-                notifier.removeListener(this);
+                notifier.removeValueChangeListener(this);
             }
         }
 
@@ -208,7 +210,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         itemCacheAccessLog.clear();
         propertyItemMapCache.clear();
 
-        discard();
+//        discard();
     }
 
     /**
@@ -218,8 +220,8 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     @Override
     public int size() {
-        int size = getQuery().size() + addedItems.size();
-		return Math.max(size, 1);
+        return getQuery().size() + addedItems.size();
+//		return Math.max(size, 1);
     }
 
     /**
@@ -229,7 +231,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      * @return the batch size.
      */
     public int getBatchSize() {
-        return queryDefinition.getBatchSize();
+        return getQueryDefinition().getBatchSize();
     }
 
     /**
@@ -267,15 +269,21 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
         }
         if (!itemCache.containsKey(index - addedItemCount)) {
             // item is not in our cache, ask the query for more items
+        	logger.debug("Loading item at: "+index);
             queryItem(index - addedItemCount);
         } else {
-            // item is already in our cache
+            // item is already in our cachemessage
             // refresh cache access log.
             itemCacheAccessLog.remove(new Integer(index));
             itemCacheAccessLog.addLast(new Integer(index));
         }
 
-        return itemCache.get(index - addedItemCount);
+        Item item = itemCache.get(index - addedItemCount);
+        if(item==null){
+        	logger.error("item is null at index: "+index);
+        }
+        
+		return item;
     }
 
     /**
@@ -341,7 +349,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
                 final Property property = item.getItemProperty(propertyId);
                 if (property instanceof ValueChangeNotifier) {
                     final ValueChangeNotifier notifier = (ValueChangeNotifier) property;
-                    notifier.addListener(this);
+                    notifier.addValueChangeListener(this);
                     propertyItemMapCache.put(property, item);
                 }
             }
@@ -404,12 +412,12 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     private Query getQuery() {
         if (query == null) {
-            queryDefinition.setSortPropertyIds(sortPropertyIds);
-            queryDefinition.setSortPropertyAscendingStates(ascendingStates);
-            query = queryFactory.constructQuery(queryDefinition);
+        	getQueryDefinition().setSortPropertyIds(sortPropertyIds);
+        	getQueryDefinition().setSortPropertyAscendingStates(ascendingStates);
+            query = queryFactory.constructQuery(getQueryDefinition());
             querySize = query.size();
-            if (queryDefinition.getMaxQuerySize() > -1 && queryDefinition.getMaxQuerySize() < querySize) {
-                querySize = queryDefinition.getMaxQuerySize();
+            if (getQueryDefinition().getMaxQuerySize() > -1 && getQueryDefinition().getMaxQuerySize() < querySize) {
+                querySize = getQueryDefinition().getMaxQuerySize();
             }
             queryCount++;
         }
@@ -633,8 +641,8 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     public List<?> getItemIdList() {
         if (itemIdList == null) {
-            if (queryDefinition.getIdPropertyId() != null) {
-                itemIdList = new LazyIdList<Object>(this, queryDefinition.getIdPropertyId());
+            if (getQueryDefinition().getIdPropertyId() != null) {
+                itemIdList = new LazyIdList<Object>(this, getQueryDefinition().getIdPropertyId());
             } else {
                 itemIdList = new NaturalNumberIdsList(size());
             }
@@ -645,25 +653,25 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
 
     @Override
     public void addFilter(final Container.Filter filter) {
-        queryDefinition.addFilter(filter);
-        refresh();
+        getQueryDefinition().addFilter(filter);
+//        refresh();
     }
 
     @Override
     public void removeFilter(final Container.Filter filter) {
-        queryDefinition.removeFilter(filter);
-        refresh();
+    	getQueryDefinition().removeFilter(filter);
+//        refresh();
     }
 
     @Override
     public void removeFilters() {
-        queryDefinition.removeFilters();
-        refresh();
+    	getQueryDefinition().removeFilters();
+//        refresh();
     }
 
     @Override
     public Collection<Container.Filter> getFilters() {
-        return queryDefinition.getFilters();
+        return getQueryDefinition().getFilters();
     }
 
 	/**
