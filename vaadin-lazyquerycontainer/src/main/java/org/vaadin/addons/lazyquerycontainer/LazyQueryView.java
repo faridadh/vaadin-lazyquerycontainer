@@ -438,6 +438,12 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
             item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setValue(QueryItemStatus.Added);
             item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setReadOnly(true);
         }
+        //FA: set the item id to a not null value because getItemIdsUsingGetIdByIndex expects a not null id for all of the items.
+        Property idProperty = item.getItemProperty(getQueryDefinition().getIdPropertyId());
+		Long newItemID = new Long(-addedItems.size()-1);
+		idProperty.setValue(newItemID);
+		//
+		
         addedItems.add(0, item);
         if (itemIdList instanceof NaturalNumberIdsList) {
             itemIdList = null;
@@ -529,6 +535,9 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
                 item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setValue(QueryItemStatus.None);
                 item.getItemProperty(PROPERTY_ID_ITEM_STATUS).setReadOnly(true);
             }
+            //FA: set the item id to a not null value because getItemIdsUsingGetIdByIndex expects a not null id for all of the 
+            item.getItemProperty(getQueryDefinition().getIdPropertyId()).setValue(null);
+            
         }
         for (final Item item : modifiedItems) {
             if (item.getItemProperty(PROPERTY_ID_ITEM_STATUS) != null) {
