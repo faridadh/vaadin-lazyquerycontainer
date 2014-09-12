@@ -220,7 +220,7 @@ public final class LazyQueryView implements QueryView, ValueChangeListener {
      */
     @Override
     public int size() {
-        return getQuery().size() + addedItems.size();
+        return isQueryEnabled() ? (getQuery().size() + addedItems.size()) : 0;
 //		return Math.max(size, 1);
     }
 
